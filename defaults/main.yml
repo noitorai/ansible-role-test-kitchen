@@ -1,0 +1,3 @@
+---
+# defaults file for test-kitchen
+testkitchen_base_dir: "/home/{{ ansible_user }}/test-kitchen"

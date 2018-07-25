@@ -1,0 +1,100 @@
+---
+# tasks file for test-kitchen
+## ruby
+- block:
+    - name: install packages
+      yum:
+        name: "{{ item }}"
+      with_items:
+        - "@Development tools"
+        - centos-release-scl
+    - name: "install ruby and related packages"
+      yum:
+        name: "{{ item }}"
+      with_items:
+        - rh-ruby24-ruby-devel
+        - rh-ruby24-rubygem-bundler
+    - name: enable ruby24
+      copy:
+        src: enableruby24.sh
+        dest: /etc/profile.d/enableruby24.sh
+        owner: root
+        group: root
+        mode: 0644
+
+## docker
+- block:
+    - name: install packages
+      yum:
+        name: "{{ item }}"
+      with_items:
+        - yum-utils
+        - device-mapper-persistent-data
+        - lvm2
+    - name: add repository
+      command: "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo"
+      args:
+        creates: /etc/yum.repos.d/docker-ce.repo
+    - name: install docker-ce
+      yum:
+        name: docker-ce
+    - name: start and enable docker 
+      service:
+        name: docker
+        state: started
+        enabled: true
+    - name: append docker group 
+      user:
+        name: "{{ ansible_user }}"
+        append: true
+        groups: docker
+
+# ansible
+- block:
+    - name: install ansible
+      yum:
+        name: ansible
+
+
+# test-kitchen
+- block:
+    - name: create directory for test-kitchen
+      file:
+        path: "{{ testkitchen_base_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+    - name: set Gemfile
+      copy:
+        src: Gemfile
+        dest: "{{ testkitchen_base_dir }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+    - name: bundle install
+      command: "scl enable rh-ruby24 'bundle install'"
+      args:
+        chdir: "{{ testkitchen_base_dir }}"
+        creates: Gemfile.lock
+    - name: kitchen init
+      command: "scl enable rh-ruby24 'kitchen init --no-create-gemfile'"
+      args:
+        chdir: "{{ testkitchen_base_dir }}"
+        creates: "*kitchen.yml"
+    - name: set .kitchen.yml
+      copy:
+        src: kitchen.yml
+        dest: "{{ testkitchen_base_dir }}/"
+    - name: set files
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items:
+        - src: ansible.cfg
+          dest: "{{ testkitchen_base_dir }}/test/"
+        - src: default.yml
+          dest: "{{ testkitchen_base_dir }}/test/integration/default/"
+        - src: default_spec.rb
+          dest: "{{ testkitchen_base_dir }}/test/integration/default/"
+        - src: main.yml
+          dest: "{{ testkitchen_base_dir }}/tasks/"
+  become: false
