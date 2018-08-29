@@ -1,0 +1,28 @@
+---
+driver:
+  name: vagrant
+
+provisioner:
+  name: ansible_push
+  ansible_config: test/ansible.cfg
+  chef_bootstrap_url: false
+  diff: true
+
+verifier:
+  name: inspec
+
+platforms:
+  - name: centos-7
+    driver:
+      box: centos/7
+      provider: libvirt
+
+suites:
+  - name: default
+    verifier:
+      inspec_tests:
+        - path: test/integration/default
+#      attrs:
+#        - test/integration/default/attribute.yml
+    provisioner:
+      playbook: test/integration/default/default.yml
