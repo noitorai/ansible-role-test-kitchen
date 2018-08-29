@@ -57,6 +57,9 @@
 
 
 # test-kitchen
+#- name: install test-kitchen
+#  command: scl enable rh-ruby24 "gem install test-kitchen"
+
 - block:
     - name: create directory for test-kitchen
       file:
@@ -76,7 +79,7 @@
         chdir: "{{ testkitchen_base_dir }}"
         creates: Gemfile.lock
     - name: kitchen init
-      command: "scl enable rh-ruby24 'kitchen init --no-create-gemfile'"
+      command: "/bin/bash -lc \"scl enable rh-ruby24 'kitchen init --no-create-gemfile'\""
       args:
         chdir: "{{ testkitchen_base_dir }}"
         creates: "*kitchen.yml"
